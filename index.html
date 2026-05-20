@@ -1,15 +1,489 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>Peilol 的小窝</title>
-    <!-- 看板娘需要的样式 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Peilol · 今天不想来实验室</title>
+    <!-- 干净字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 免费图标 (只用少量) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f7fc;
+            font-family: 'Inter', sans-serif;
+            color: #1f2a44;
+            line-height: 1.5;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 主容器 – 清淡卡片 */
+        .container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 2rem;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.02);
+            padding: 2rem 2rem 2.5rem;
+            transition: all 0.2s ease;
+        }
+
+        /* 头部区域 */
+        .header {
+            text-align: left;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #eef2f8;
+            padding-bottom: 1.2rem;
+        }
+        .name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(120deg, #2c3e66, #4a6b8f);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+        .bio {
+            font-size: 1rem;
+            color: #5b6e8c;
+            margin-top: 0.4rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .badge {
+            background: #eef2fa;
+            padding: 0.2rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #2c4f7c;
+        }
+
+        /* 可玩性区域 grid */
+        .playground {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        .widget {
+            background: #fafcff;
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.2rem 1.5rem;
+            border: 1px solid #e9edf4;
+            transition: transform 0.1s ease, box-shadow 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        }
+        .widget:hover {
+            border-color: #cddae9;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+        }
+        .widget-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #2c3e66;
+            border-left: 3px solid #7f9bc0;
+            padding-left: 10px;
+        }
+        /* 计数器 */
+        .counter-area {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0.8rem 0;
+        }
+        .counter-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c4f7c;
+            line-height: 1;
+        }
+        .counter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background: #eef2f8;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-size: 0.85rem;
+            color: #2c3e66;
+        }
+        .btn:hover {
+            background: #dfe6f0;
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: #e2eaf5;
+            color: #1f4870;
+        }
+        /* 随机名言 */
+        .quote-box {
+            background: #f7f9fe;
+            padding: 1rem;
+            border-radius: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: #446688;
+            font-style: normal;
+            border-left: 4px solid #bdd4f0;
+        }
+        /* 主题切换 */
+        .theme-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .switch-label {
+            font-size: 0.9rem;
+        }
+        /* 待办简单输入 */
+        .todo-input-group {
+            display: flex;
+            gap: 8px;
+            margin: 12px 0;
+        }
+        .todo-input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 40px;
+            border: 1px solid #cfdfed;
+            background: #ffffff;
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            transition: 0.1s;
+        }
+        .todo-input:focus {
+            border-color: #7f9bc0;
+        }
+        .todo-list {
+            list-style: none;
+            margin-top: 10px;
+        }
+        .todo-list li {
+            font-size: 0.85rem;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e9edf4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .todo-list li span {
+            cursor: pointer;
+            flex: 1;
+        }
+        .todo-list li .completed {
+            text-decoration: line-through;
+            color: #8a9cbb;
+        }
+        .delete-todo {
+            background: none;
+            border: none;
+            color: #b9c8e8;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .delete-todo:hover {
+            color: #d66;
+        }
+        hr {
+            margin: 1rem 0;
+            border: 0;
+            height: 1px;
+            background: #ecf0f5;
+        }
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: flex-start;
+        }
+        .social-links a {
+            color: #6b85aa;
+            font-size: 1.3rem;
+            transition: color 0.2s;
+        }
+        .social-links a:hover {
+            color: #2f5b8c;
+        }
+        footer {
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            text-align: center;
+            color: #99aec9;
+        }
+
+        /* 浅色变体（默认就是浅色，可玩性中的主题切换将改变body背景和卡片背景，但保留卡片内对比度） */
+        body.dark {
+            background: #1a232f;
+        }
+        body.dark .container {
+            background: #253341;
+            color: #eef2fa;
+        }
+        body.dark .name {
+            background: linear-gradient(120deg, #c1dcff, #a0c0f0);
+            background-clip: text;
+            -webkit-background-clip: text;
+        }
+        body.dark .bio, body.dark .widget, body.dark .widget-title, body.dark .counter-number, body.dark .quote-box, body.dark .todo-list li {
+            color: #dce6f0;
+        }
+        body.dark .widget {
+            background: #2a3a4a;
+            border-color: #3e5368;
+        }
+        body.dark .btn, body.dark .badge {
+            background: #30445c;
+            color: #eef2fc;
+        }
+        body.dark .todo-input {
+            background: #30445c;
+            border-color: #506e8c;
+            color: white;
+        }
+        body.dark .quote-box {
+            background: #1e2e3e;
+            border-left-color: #6c8fb0;
+        }
+    </style>
 </head>
 <body>
-    <h1 align="center">ciallo~</h1>
-    <p align="center">ooo ~</p>
+<div class="container">
+    <!-- 头部个人信息 (清淡) -->
+    <div class="header" style="display: flex; align-items: center; gap: 1.2rem;">
+    <img src="kipfel_f2.png" alt="avatar" style="width: 70px; height: auto; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div>
+        <div class="name">Peilol</div>
+        <div class="bio">
+            <span><i class="fas fa-laptop-code"></i> 正在尝试偷跑</span>
+            <span class="badge"><i class="fas fa-mug-hot"></i> 写写代码</span>
+            <span class="badge"><i class="fas fa-feather-alt"></i> 摸鱼一天</span>
+        </div>
+    </div>
 
-    <!-- 加载看板娘（使用官方稳定版脚本） -->
-    <script src="https://fastly.jsdelivr.net/gh/Peilol/live2d-widget@master/dist/autoload.js"></script>
+    <!-- ✨ 可玩性区域 ✨ -->
+    <div class="playground">
+        <!-- 小组件1: 点击计数器 -->
+        <div class="widget">
+            <div class="widget-title"><i class="fas fa-hand-peace"></i> 今日摸鱼指数</div>
+            <div class="counter-area">
+                <span class="counter-number" id="clickCount">0</span>
+                <div class="counter-buttons">
+                    <button class="btn" id="incBtn">+1</button>
+                    <button class="btn" id="resetBtn">归零</button>
+                </div>
+            </div>
+            <div style="font-size: 0.75rem; color:#8aa0bc;">点一点，攒点小快乐 ✨</div>
+        </div>
+
+        <!-- 小组件2: 随机激励 / 名言 -->
+        <div class="widget">
+            <div class="widget-title"><i class="fas fa-quote-left"></i> 今日清醒语录</div>
+            <div class="quote-box" id="quoteDisplay">代码写累了？放假一个月！</div>
+            <button class="btn" id="newQuoteBtn" style="width:100%; margin-top:6px;">🍃 换一句</button>
+        </div>
+
+        <!-- 小组件3: 极简待办 -->
+        <div class="widget">
+            <div class="widget-title"><i class="fas fa-check-circle"></i> 小任务清单</div>
+            <div class="todo-input-group">
+                <input type="text" id="todoInput" class="todo-input" placeholder="写个任务..." autocomplete="off">
+                <button class="btn" id="addTodoBtn">➕</button>
+            </div>
+            <ul class="todo-list" id="todoList">
+                <li><span>✨ 休息1天</span><button class="delete-todo">✖</button></li>
+                <li><span>🍃 休息10天</span><button class="delete-todo">✖</button></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 额外增强: 主题明暗切换  -->
+    <div class="widget" style="margin-top:0;">
+        <div class="theme-toggle">
+            <span class="switch-label"><i class="fas fa-moon"></i> 夜间小憩模式</span>
+            <label class="switch">
+                <input type="checkbox" id="darkModeToggle">
+                <span class="slider round"></span>
+            </label>
+        </div>
+        <div style="font-size:0.75rem; color:#8ba0bc; margin-top:8px;">切换背景舒适度，保护眼睛✨</div>
+    </div>
+
+    <!-- 社交链接区 保持干净 -->
+    <div class="social-links">
+        <a href="https://github.com/Peilol" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
+        <a href="#" target="_blank" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+        <a href="#" target="_blank" aria-label="Blog"><i class="fas fa-blog"></i></a>
+    </div>
+</div>
+
+<!-- ⬇️ 看板娘脚本 ⬇️ -->
+<script src="https://fastly.jsdelivr.net/gh/Peilol/live2d-widget@master/dist/autoload.js"></script>
+<!-- 如果希望看板娘固定在右下角，不遮挡按钮，可额外加一点样式 -->
+<style>
+    /* 调整看板娘画布位置，避开右下角交互区域 */
+    #live2d-widget canvas {
+        right: 10px !important;
+        bottom: 10px !important;
+        z-index: 999;
+        pointer-events: auto; /* 让看板娘可点击，但不会挡住按钮的大部分区域 */
+    }
+    /* 如果看板娘菜单栏挡住了任务清单，可以缩小其宽度 */
+    .live2d-widget-toolbar {
+        right: 70px !important;
+        bottom: 20px !important;
+    }
+</style>
+
+</body>
+</html>
+
+<script>
+    // 1. 计数器逻辑
+    let count = localStorage.getItem('clickCounter') ? parseInt(localStorage.getItem('clickCounter')) : 0;
+    const countEl = document.getElementById('clickCount');
+    const incBtn = document.getElementById('incBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    function updateCounterUI() {
+        countEl.innerText = count;
+        localStorage.setItem('clickCounter', count);
+    }
+    incBtn.addEventListener('click', () => { count++; updateCounterUI(); });
+    resetBtn.addEventListener('click', () => { count = 0; updateCounterUI(); });
+    updateCounterUI();
+
+    // 2. 随机名言库 
+    const quotes = [
+    "电机PID调了三天，结果发现是线松了。",
+    "嵌入式工程师的promise：我马上就调好。",
+    "这个中断怎么不进？哦，我忘开总中断了。",
+    "机器人动起来那一刻，比看见亲妈还亲。",
+    "CAN总线又挂了，怀疑是车上有内鬼。",
+    "单片机：我明明没超频，你怎么就发热了？",
+    "写底层驱动的时候，我觉得自己是人肉时序机。",
+    "debug靠printf，定位靠猜，解决靠缘分。",
+    "机器人撞墙不是bug，是它想试探墙的硬度。",
+    "示波器夹子掉了，我的人生也断了。",
+    "电调初始化失败，原地旋转升天。",
+    "代码烧进去没反应，换了个烧录器就好了 —— 玄学。",
+    "陀螺仪数据飘了，车也开始思考人生。",
+    "PWM波正常，电机不动 —— 哦，没供电。",
+    "嵌入式三连：重启、重烧、换板子。",
+    "机器人原地转圈，可能在跳求雨舞。",
+    "中断嵌套太多，我已经分不清谁是谁了。",
+    "freeRTOS任务死锁，不如直接看门狗复位。",
+    "我写代码靠手册，你写代码靠运气，我们都有光明的未来。",
+    "机器人电控的本质：把希望焊在板子上。"
+    ];
+    const quoteDisplay = document.getElementById('quoteDisplay');
+    const newQuoteBtn = document.getElementById('newQuoteBtn');
+    function randomQuote() {
+        const randomIndex = Math.floor(Math.random() * quotes.length);
+        quoteDisplay.innerText = quotes[randomIndex];
+    }
+    newQuoteBtn.addEventListener('click', randomQuote);
+    randomQuote(); // 初始随机
+
+    // 3. 待办事项功能 (存储到localStorage)
+    let todos = [];
+    const todoListEl = document.getElementById('todoList');
+    const todoInput = document.getElementById('todoInput');
+    const addTodoBtn = document.getElementById('addTodoBtn');
+
+    function loadTodos() {
+        const stored = localStorage.getItem('simpleTodos');
+        if(stored) {
+            todos = JSON.parse(stored);
+        } else {
+            todos = [
+                { text: "✨ 休息1天", completed: false },
+                { text: "🍃 休息10天", completed: false }
+            ];
+        }
+        renderTodos();
+    }
+    function saveTodos() {
+        localStorage.setItem('simpleTodos', JSON.stringify(todos));
+    }
+    function renderTodos() {
+        todoListEl.innerHTML = '';
+        todos.forEach((todo, index) => {
+            const li = document.createElement('li');
+            const span = document.createElement('span');
+            span.innerText = todo.text;
+            if(todo.completed) span.classList.add('completed');
+            span.addEventListener('click', () => {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+            });
+            const delBtn = document.createElement('button');
+            delBtn.innerText = '✖';
+            delBtn.classList.add('delete-todo');
+            delBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                todos.splice(index, 1);
+                saveTodos();
+                renderTodos();
+            });
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            todoListEl.appendChild(li);
+        });
+    }
+    function addTodo() {
+        const text = todoInput.value.trim();
+        if(text === "") return;
+        todos.push({ text: text, completed: false });
+        saveTodos();
+        renderTodos();
+        todoInput.value = "";
+    }
+    addTodoBtn.addEventListener('click', addTodo);
+    todoInput.addEventListener('keypress', (e) => {
+        if(e.key === 'Enter') addTodo();
+    });
+    loadTodos();
+
+    // 4. 主题切换暗色/亮色 
+    const darkToggle = document.getElementById('darkModeToggle');
+    // 检查本地存储
+    if(localStorage.getItem('darkMode') === 'enabled') {
+        document.body.classList.add('dark');
+        darkToggle.checked = true;
+    }
+    darkToggle.addEventListener('change', function() {
+        if(darkToggle.checked) {
+            document.body.classList.add('dark');
+            localStorage.setItem('darkMode', 'enabled');
+        } else {
+            document.body.classList.remove('dark');
+            localStorage.setItem('darkMode', 'disabled');
+        }
+    });
+</script>
 </body>
 </html>
