@@ -242,6 +242,27 @@
             background: #30445c;
             color: #eef2fc;
         }
+
+        /* 左下角看板娘专用样式 */
+        #live2d-widget {
+            left: 0 !important;
+            right: auto !important;
+            bottom: 10px !important;
+            top: auto !important;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+        #live2d-widget canvas {
+            max-width: 180px;
+            width: auto;
+            cursor: pointer;
+        }
+        /* 如果看板娘工具栏需要也移过来 */
+        .live2d-widget-toolbar {
+            left: 10px !important;
+            right: auto !important;
+            bottom: 20px !important;
+        }
     </style>
 </head>
 <body>
@@ -388,5 +409,8 @@
     if(localStorage.getItem('darkMode') === 'enabled') { document.body.classList.add('dark'); darkToggle.checked = true; }
     darkToggle.addEventListener('change', function() { if(darkToggle.checked) { document.body.classList.add('dark'); localStorage.setItem('darkMode', 'enabled'); } else { document.body.classList.remove('dark'); localStorage.setItem('darkMode', 'disabled'); } });
 </script>
+
+<!-- 看板娘脚本（左下角） -->
+<script src="https://fastly.jsdelivr.net/gh/Peilol/live2d-widget@master/dist/autoload.js"></script>
 </body>
 </html>
