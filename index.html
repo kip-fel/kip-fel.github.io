@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heavensward - FFXIV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #03070d;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            position: relative;
+            color: #8da4c4;
+            user-select: none;
+        }
+
+        /* ========== 过渡遮罩层 ========== */
+        #transition-overlay {
+            position: absolute;
+            inset: 0;
+            background: #010409;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #transition-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* ========== A状态容器（包裹所有原有内容） ========== */
+        #state-a {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+            pointer-events: all;
+        }
+        body.state-b #state-a {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        /* ========== B状态容器（视频播放） ========== */
+        #state-b {
+            position: absolute;
+            inset: 0;
+            z-index: 50;
+            background: #000000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+        body.state-b #state-b {
+            opacity: 1;
+            pointer-events: all;
+            transition: opacity 0.3s ease;
+        }
+        #state-b video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        #state-b .hint-esc {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.75rem;
+            letter-spacing: 0.2em;
+            pointer-events: none;
+            z-index: 5;
+            animation: hintPulse 3s ease-in-out infinite;
+        }
+        @keyframes hintPulse {
+            0%,
+            100% {
+                opacity: 0.25;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* ========== 原有样式（保持不变） ========== */
+        .bg-wrapper {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 30%, #0c1a2a 0%, #03070d 80%);
+            z-index: 0;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .snow-container {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .flake {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            will-change: transform, opacity;
+        }
+
+        .dragon-container {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0;
+            animation: fadeIn 2s ease-out 0.8s forwards;
+        }
+
+        .dragon-silhouette {
+            width: 80%;
+            max-width: 1000px;
+            height: 90vh;
+            filter: blur(35px) drop-shadow(0 0 40px rgba(40, 100, 200, 0.15));
+            mix-blend-mode: screen;
+            opacity: 0.4;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: -20px;
+        }
+
+        .title-main {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: clamp(3.5rem, 8vw, 7rem);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            background: linear-gradient(180deg, #f2f6fc 0%, #b1c5e0 50%, #54709b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            opacity: 0;
+            transform: translateY(25px);
+            animation: fadeUp 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.8s forwards;
+        }
+
+        .title-sub {
+            font-family: 'Cinzel', serif;
+            font-size: clamp(1.2rem, 2.2vw, 2.2rem);
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            color: #a8bbd9;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: fadeUp 1s ease-out 1.2s forwards;
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .title-sub::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 1px;
+            background: rgba(100, 160, 255, 0.2);
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .menu-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 45px;
+            letter-spacing: 0.3em;
+            opacity: 0;
+            animation: fadeIn 1s ease-out 1.8s forwards;
+        }
+
+        .menu-item {
+            font-size: clamp(0.8rem, 1vw, 1.1rem);
+            color: #869bb8;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .menu-item:hover {
+            color: #ffffff;
+            transform: translateY(-1px);
+            letter-spacing: 0.4em;
+        }
+        .menu-item.highlight-movies {
+            color: #b8cef0;
+            position: relative;
+        }
+        .menu-item.highlight-movies::before {
+            content: '▶';
+            position: absolute;
+            left: -22px;
+            font-size: 0.6rem;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            color: #8bc0ff;
+        }
+        .menu-item.highlight-movies:hover::before {
+            opacity: 1;
+        }
+
+        .ui-item {
+            position: absolute;
+            z-index: 20;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            animation: fadeIn 1s ease-out 1.5s forwards;
+        }
+        .top-left {
+            top: 15px;
+            left: 15px;
+            font-family: monospace;
+        }
+        .top-right {
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+        }
+        .top-right svg {
+            fill: rgba(255, 255, 255, 0.15);
+            width: 22px;
+            height: 22px;
+            transition: 0.3s;
+        }
+        .top-right:hover svg {
+            fill: rgba(255, 255, 255, 0.6);
+        }
+        .bottom-left {
+            bottom: 25px;
+            left: 25px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .bottom-left svg {
+            fill: rgba(255, 255, 255, 0.15);
+            width: 16px;
+            height: 16px;
+        }
+        .copyright {
+            bottom: 25px;
+            width: 100%;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========== 过渡遮罩层 ========== -->
+    <div id="transition-overlay"></div>
+
+    <!-- ========== A状态：主界面内容 ========== -->
+    <div id="state-a">
+        <div class="bg-wrapper"></div>
+        <div class="snow-container" id="snow"></div>
+
+        <div class="dragon-container">
+            <svg class="dragon-silhouette" viewBox="0 0 1024 768" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M512,768 C300,768 100,600 50,400 C20,280 80,180 150,120 C180,150 210,200 240,220 C280,160 340,100 420,80 C450,150 480,200 512,220 C544,200 574,150 604,80 C684,100 744,160 784,220 C814,200 844,150 874,120 C944,180 1004,280 974,400 C924,600 724,768 512,768 Z" fill="#1a3a5c"/>
+                <path d="M512,768 C512,400 200,400 150,300 C120,250 150,150 200,100 C250,150 280,200 320,250 C360,180 420,100 512,100 C604,100 664,180 704,250 C744,200 774,150 824,100 C874,150 904,250 874,300 C824,400 512,400 512,768 Z" fill="#5b97cc" opacity="0.35"/>
+                <circle cx="440" cy="180" r="12" fill="#8bc0ff" filter="blur(8px)" opacity="0.6"/>
+                <circle cx="584" cy="180" r="12" fill="#8bc0ff" filter="blur(8px)" opacity="0.6"/>
+            </svg>
+        </div>
+
+        <div class="content-wrapper">
+            <h1 class="title-main">HEAVENSWARD</h1>
+            <div class="title-sub">FINAL FANTASY XIV ONLINE</div>
+            <div class="menu-container">
+                <div class="menu-item">START</div>
+                <div class="menu-item">DATA CENTER</div>
+                <div class="menu-item highlight-movies" id="menu-movies">MOVIES</div>
+                <div class="menu-item">CONFIGURATION</div>
+                <div class="menu-item">EXIT</div>
+            </div>
+        </div>
+
+        <div class="ui-item top-left">Version: 2015.06.17.0000.0000</div>
+        <div class="ui-item top-right">
+            <svg viewBox="0 0 24 24"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-1.91z"/></svg>
+        </div>
+        <div class="ui-item bottom-left">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+            <span>1人正在看</span>
+        </div>
+        <div class="ui-item copyright">© 2010-2015 SQUARE ENIX CO., LTD. All Rights Reserved.</div>
+    </div>
+
+    <!-- ========== B状态：视频播放容器 ========== -->
+    <div id="state-b">
+        <video id="main-video" src="video.mp4" preload="auto" playsinline disablePictureInPicture disableRemotePlayback></video>
+        <div class="hint-esc">PRESS ESC TO RETURN</div>
+    </div>
+
+    <!-- ========== 背景音乐（隐藏） ========== -->
+    <audio id="bgm" src="music.mp3" preload="auto" loop></audio>
+
+    <script>
+        (function() {
+            // ==================== DOM 元素引用 ====================
+            const body = document.body;
+            const stateA = document.getElementById('state-a');
+            const stateB = document.getElementById('state-b');
+            const overlay = document.getElementById('transition-overlay');
+            const bgmAudio = document.getElementById('bgm');
+            const mainVideo = document.getElementById('main-video');
+            const menuMovies = document.getElementById('menu-movies');
+            const snowContainer = document.getElementById('snow');
+
+            // ==================== 状态管理 ====================
+            let currentState = 'A'; // 'A' | 'B'
+            let isTransitioning = false;
+            let autoSwitchTimer = null;
+            const AUTO_SWITCH_DELAY = 45000; // 45秒
+
+            // ==================== 雪花粒子系统 ====================
+            const flakes = [];
+            const flakeCount = 120;
+            let snowActive = true; // B状态时暂停雪花更新以节省资源
+
+            for (let i = 0; i < flakeCount; i++) {
+                const el = document.createElement('div');
+                el.className = 'flake';
+
+                const size = Math.random() * 4 + 2;
+                const z = Math.random() * 0.7 + 0.3;
+                const phaseX = Math.random() * Math.PI * 2;
+                const phaseY = Math.random() * Math.PI * 2;
+                const phaseZ = Math.random() * Math.PI * 2;
+
+                const flakeObj = {
+                    el: el,
+                    x: Math.random() * 100,
+                    y: Math.random() * 100,
+                    z: z,
+                    baseSize: size,
+                    speedX: 0.5 + Math.random() * 1.5,
+                    speedY: 0.5 + Math.random() * 1.5,
+                    speedZ: 0.2 + Math.random() * 0.8,
+                    phaseX: phaseX,
+                    phaseY: phaseY,
+                    phaseZ: phaseZ,
+                    time: Math.random() * 100
+                };
+
+                snowContainer.appendChild(el);
+                flakes.push(flakeObj);
+            }
+
+            function updateSnow() {
+                if (!snowActive) {
+                    // B状态时继续循环但不更新，节省资源
+                    requestAnimationFrame(updateSnow);
+                    return;
+                }
+                const time = Date.now() / 1000;
+                for (let f of flakes) {
+                    const t = time + f.phaseX;
+                    let x = f.x + Math.sin(t * 0.15 * f.speedX) * 15;
+                    let y = f.y + Math.sin(t * 0.12 * f.speedY + 1.5) * 12;
+                    let z = 0.3 + (Math.sin(t * 0.08 * f.speedZ + f.phaseZ) * 0.35 + 0.35);
+
+                    f.z = z;
+
+                    if (x > 120) x = -20;
+                    if (x < -20) x = 120;
+                    if (y > 120) y = -20;
+                    if (y < -20) y = 120;
+
+                    f.x = x;
+                    f.y = y;
+
+                    const scaleFactor = 0.4 + z * 0.6;
+                    const opacity = 0.1 + z * 0.6;
+
+                    f.el.style.transform = `translate(${x}vw, ${y}vh) scale(${scaleFactor})`;
+                    f.el.style.width = f.baseSize + 'px';
+                    f.el.style.height = f.baseSize + 'px';
+                    f.el.style.opacity = opacity;
+                }
+                requestAnimationFrame(updateSnow);
+            }
+            updateSnow();
+
+            // ==================== 动画重置函数 ====================
+            function resetAllAnimations() {
+                // 选择所有有入场动画的元素
+                const animatedElements = document.querySelectorAll(
+                    '#state-a .bg-wrapper, ' +
+                    '#state-a .dragon-container, ' +
+                    '#state-a .title-main, ' +
+                    '#state-a .title-sub, ' +
+                    '#state-a .menu-container, ' +
+                    '#state-a .ui-item'
+                );
+                // 移除动画
+                animatedElements.forEach(el => {
+                    el.style.animation = 'none';
+                });
+                // 强制回流
+                void document.body.offsetHeight;
+                // 恢复动画（让CSS中的animation规则重新生效）
+                animatedElements.forEach(el => {
+                    el.style.animation = '';
+                });
+            }
+
+            // ==================== 过渡控制 ====================
+            function transitionOverlayFadeIn() {
+                return new Promise(resolve => {
+                    overlay.classList.add('active');
+                    // 等待CSS transition完成（0.4s）
+                    setTimeout(resolve, 420);
+                });
+            }
+
+            function transitionOverlayFadeOut() {
+                return new Promise(resolve => {
+                    overlay.classList.remove('active');
+                    setTimeout(resolve, 420);
+                });
+            }
+
+            // ==================== A → B 切换 ====================
+            async function switchToB() {
+                if (isTransitioning || currentState === 'B') return;
+                isTransitioning = true;
+
+                // 清除自动切换计时器
+                if (autoSwitchTimer) {
+                    clearTimeout(autoSwitchTimer);
+                    autoSwitchTimer = null;
+                }
+
+                // 暂停BGM
+                bgmAudio.pause();
+                bgmAudio.currentTime = 0;
+
+                // 过渡：遮罩淡入
+                await transitionOverlayFadeIn();
+
+                // 切换状态
+                body.classList.add('state-b');
+                currentState = 'B';
+                snowActive = false; // 暂停雪花更新
+
+                // 重置视频并播放
+                mainVideo.currentTime = 0;
+                try {
+                    await mainVideo.play();
+                } catch (e) {
+                    // 如果自动播放被阻止，尝试静音播放
+                    console.warn('视频自动播放失败，尝试静音播放:', e.message);
+                    try {
+                        mainVideo.muted = true;
+                        await mainVideo.play();
+                    } catch (e2) {
+                        console.error('视频播放完全失败，返回A状态');
+                        // 播放失败，返回A状态
+                        await switchToA();
+                        return;
+                    }
+                }
+
+                // 过渡：遮罩淡出
+                await transitionOverlayFadeOut();
+
+                isTransitioning = false;
+            }
+
+            // ==================== B → A 切换 ====================
+            async function switchToA() {
+                if (isTransitioning || currentState === 'A') return;
+                isTransitioning = true;
+
+                // 暂停视频
+                mainVideo.pause();
+                mainVideo.currentTime = 0;
+                if (mainVideo.muted) mainVideo.muted = false;
+
+                // 过渡：遮罩淡入
+                await transitionOverlayFadeIn();
+
+                // 切换状态
+                body.classList.remove('state-b');
+                currentState = 'A';
+                snowActive = true; // 恢复雪花更新
+
+                // 重置所有入场动画
+                resetAllAnimations();
+
+                // 重新播放BGM
+                bgmAudio.currentTime = 0;
+                try {
+                    await bgmAudio.play();
+                } catch (e) {
+                    console.warn('BGM自动播放失败:', e.message);
+                }
+
+                // 过渡：遮罩淡出
+                await transitionOverlayFadeOut();
+
+                // 重新启动45秒自动切换计时器
+                startAutoSwitchTimer();
+
+                isTransitioning = false;
+            }
+
+            // ==================== 45秒自动切换计时器 ====================
+            function startAutoSwitchTimer() {
+                if (autoSwitchTimer) clearTimeout(autoSwitchTimer);
+                autoSwitchTimer = setTimeout(() => {
+                    if (currentState === 'A' && !isTransitioning) {
+                        switchToB();
+                    }
+                }, AUTO_SWITCH_DELAY);
+            }
+
+            // ==================== 事件监听 ====================
+
+            // Movies菜单项点击 → 切换到B状态
+            menuMovies.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (currentState === 'A' && !isTransitioning) {
+                    switchToB();
+                }
+            });
+
+            // 键盘Esc监听 → B状态时返回A状态
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && currentState === 'B' && !isTransitioning) {
+                    e.preventDefault();
+                    switchToA();
+                }
+            });
+
+            // 视频播放结束 → 自动返回A状态
+            mainVideo.addEventListener('ended', () => {
+                if (currentState === 'B' && !isTransitioning) {
+                    switchToA();
+                }
+            });
+
+            // 视频加载错误 → 返回A状态
+            mainVideo.addEventListener('error', () => {
+                console.error('视频加载失败，返回A状态');
+                if (currentState === 'B' && !isTransitioning) {
+                    switchToA();
+                }
+            });
+
+            // 处理浏览器自动播放策略：首次用户交互时确保bgm可以播放
+            function enableAudioOnInteraction() {
+                if (bgmAudio.paused && currentState === 'A') {
+                    bgmAudio.play().catch(() => {});
+                }
+                document.removeEventListener('click', enableAudioOnInteraction);
+                document.removeEventListener('touchstart', enableAudioOnInteraction);
+                document.removeEventListener('keydown', enableAudioOnInteraction);
+            }
+            document.addEventListener('click', enableAudioOnInteraction, { once: true });
+            document.addEventListener('touchstart', enableAudioOnInteraction, { once: true });
+            document.addEventListener('keydown', enableAudioOnInteraction, { once: true });
+
+            // ==================== 初始化 ====================
+            function init() {
+                // 初始状态为A
+                body.classList.remove('state-b');
+                currentState = 'A';
+                snowActive = true;
+                isTransitioning = false;
+
+                // 尝试自动播放BGM
+                bgmAudio.currentTime = 0;
+                bgmAudio.play().catch(() => {
+                    // 如果被浏览器阻止，等待用户交互
+                    console.log('BGM自动播放被浏览器阻止，等待用户交互...');
+                });
+
+                // 启动45秒自动切换计时器
+                startAutoSwitchTimer();
+            }
+
+            init();
+
+            console.log('%c Heavensward - FFXIV %c已就绪',
+                'font-family:"Cinzel",serif;font-size:1.2em;color:#8bc0ff;',
+                'color:#869bb8;');
+            console.log('%c A状态 %c→ 45秒后自动切入B状态 | 点击MOVIES立即切入',
+                'color:#f2f6fc;', 'color:#869bb8;');
+            console.log('%c B状态 %c→ 视频播完或按Esc返回A状态 | 重新上演开屏动画',
+                'color:#f2f6fc;', 'color:#869bb8;');
+        })();
+    </script>
+</body>
+</html>
